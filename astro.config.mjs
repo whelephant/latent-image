@@ -20,7 +20,9 @@ const BASE = '/latent-image';
 // https://astro.build/config
 export default defineConfig({
   site: SITE,
-  base: BASE,
+  // Keystatic doesn't support a non-root base; the CMS is local-only, so serve
+  // it (and the dev preview) from root. Production keeps the project-site base.
+  base: KEYSTATIC ? '/' : BASE,
   output: KEYSTATIC ? 'server' : 'static',
   adapter: KEYSTATIC ? node({ mode: 'standalone' }) : undefined,
   integrations: [mdx(), sitemap(), ...(KEYSTATIC ? [react(), keystatic()] : [])],
