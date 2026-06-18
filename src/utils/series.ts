@@ -8,12 +8,12 @@ import type { ImageMetadata } from 'astro';
 import { lqip } from './lqip';
 
 const metas = import.meta.glob<ImageMetadata>(
-  '/src/assets/series/**/*.{jpg,jpeg,png,JPG,JPEG,PNG}',
+  '/src/content/series/**/*.{jpg,jpeg,png,JPG,JPEG,PNG}',
   { eager: true, import: 'default' }
 );
 
 function keyFor(seriesId: string, file: string): string {
-  return `/src/assets/series/${seriesId}/${file}`;
+  return `/src/content/series/${seriesId}/${file}`;
 }
 
 export function getImageMeta(seriesId: string, file: string): ImageMetadata {

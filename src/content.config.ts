@@ -49,7 +49,13 @@ const exif = z
   .optional();
 
 const series = defineCollection({
-  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/series' }),
+  // Folder-per-series: src/content/series/<id>/index.mdx with co-located images
+  // (Keystatic stores uploads entry-relative into the same folder).
+  loader: glob({
+    pattern: '**/index.{md,mdx}',
+    base: './src/content/series',
+    generateId: ({ entry }) => entry.replace(/\/index\.(md|mdx)$/, ''),
+  }),
   /*
     Photos are referenced by filename; the series page resolves them against
     src/assets/series/<id>/ via import.meta.glob (which gives both the
