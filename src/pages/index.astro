@@ -1,49 +1,294 @@
 ---
-// Temporary landing — exercises layout/theme/type during M0.
-// Replaced by the composed home in Milestone 3.
+import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import Wordmark from '../components/Wordmark.astro';
+import Figure from '../components/Figure.astro';
+import { resolveCover } from '../utils/series';
+import { formatDate, isoDate } from '../utils/date';
 import { SITE } from '../consts';
+
+// Composed landing, NOT a reverse-chron feed (brief §4). Lead with the single
+// most characteristic image, then a short latest-writing list + featured series.
+const allSeries = (await getCollection('series', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+const featured =
+  allSeries.find((s) => s.data.featured) ?? allSeries[0];
+const hero = featured
+  ? await resolveCover(featured.id, featured.data.cover, featured.data.coverAlt)
+  : null;
+
+const restSeries = allSeries.filter((s) => s.id !== featured?.id).slice(0, 2);
+const featuredCards = await Promise.all(
+  restSeries.map(async (s) => ({
+    id: s.id,
+    data: s.data,
+    cover: await resolveCover(s.id, s.data.cover, s.data.coverAlt),
+  }))
+);
+
+const posts = (await getCollection('posts', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .slice(0, 4);
 ---
 
 <Base bleed>
-  <section class="scaffold">
-    <p class="scaffold__eyebrow mono">latent · developing</p>
-    <Wordmark as="h1" display />
-    <p class="scaffold__lede">{SITE.tagline}</p>
-    <p class="scaffold__note">
-      Foundation in place: darkroom-neutral tokens, self-hosted Newsreader &amp;
-      JetBrains&nbsp;Mono, no-flash <a href="#" data-theme-toggle-hint>light / dark / auto</a>,
-      and view transitions. The composed home arrives in a later milestone.
-    </p>
+  {/* ---- Hero: the thesis is the image ---- */}
+  <section class="hero">
+    {
+      hero && (
+        <div class="hero__image">
+          <Figure
+            image={hero.image}
+            alt={hero.alt}
+            lqip={hero.lqip}
+            mode="full"
+            priority
+            sizes="100vw"
+            class="hero__fig"
+          />
+        </div>
+      )
+    }
+    <div class="hero__plate">
+      <Wordmark as="h1" display />
+      <p class="hero__statement">{SITE.tagline}</p>
+      {
+        featured && (
+          <a class="hero__series-link" href={`/photography/${featured.id}`}>
+            Currently showing — {featured.data.title}
+          </a>
+        )
+      }
+    </div>
   </section>
+
+  <div class="home-body">
+    {/* ---- Latest writing ---- */}
+    <section class="block" aria-labelledby="latest-h">
+      <div class="block__head">
+        <h2 id="latest-h" class="block__title">Latest writing</h2>
+        <a class="block__more mono" href="/writing">All writing →</a>
+      </div>
+      <ul class="latest">
+        {
+          posts.map((post) => (
+            <li class="latest__item">
+              <a class="latest__link" href={`/writing/${post.id}`}>
+                <h3 class="latest__title">{post.data.title}</h3>
+                <p class="latest__dek">{post.data.description}</p>
+                <time class="latest__date mono" datetime={isoDate(post.data.pubDate)}>
+                  {formatDate(post.data.pubDate)}
+                </time>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    {/* ---- Featured series ---- */}
+    {
+      featuredCards.length > 0 && (
+        <section class="block" aria-labelledby="series-h">
+          <div class="block__head">
+            <h2 id="series-h" class="block__title">More series</h2>
+            <a class="block__more mono" href="/photography">All photography →</a>
+          </div>
+          <ul class="featured">
+            {featuredCards.map(({ id, data, cover }) => (
+              <li class="featured__item">
+                <a class="featured__link" href={`/photography/${id}`}>
+                  <Figure
+                    image={cover.image}
+                    alt={cover.alt}
+                    lqip={cover.lqip}
+                    mode="in-column"
+                    sizes="(min-width: 44rem) 24rem, 92vw"
+                    class="featured__cover"
+                  />
+                  <h3 class="featured__title">{data.title}</h3>
+                  <p class="featured__meta mono">
+                    {formatDate(data.date)}
+                    {data.place && ` · ${data.place}`}
+                  </p>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )
+    }
+  </div>
 </Base>
 
 <style>
-  .scaffold {
-    min-height: calc(100svh - 12rem);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: var(--space-m);
-    max-width: var(--measure-px);
+  /* ---- Hero ---- */
+  .hero {
+    position: relative;
+    min-height: min(86svh, 52rem);
+    display: grid;
+  }
+  .hero__image,
+  .hero__plate {
+    grid-area: 1 / 1;
+  }
+  .hero__image :global(.hero__fig) {
+    margin: 0;
+    height: 100%;
+  }
+  .hero__image :global(.figure__frame) {
+    height: 100%;
+  }
+  .hero__image :global(.figure__img) {
+    height: 100%;
+    object-fit: cover;
+  }
+  /* Scrim so the wordmark stays legible over any image (a11y). */
+  .hero__image::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba(8, 8, 8, 0.66) 0%,
+      rgba(8, 8, 8, 0.2) 38%,
+      rgba(8, 8, 8, 0.05) 100%
+    );
+  }
+  .hero__plate {
+    position: relative;
+    z-index: 1;
+    align-self: end;
+    max-width: 78rem;
+    width: 100%;
+    margin-inline: auto;
+    padding: var(--space-2xl) var(--pad-inline) var(--space-xl);
+    color: #f4f3ef;
+  }
+  .hero__plate :global(.wordmark) {
+    color: #fafaf9;
+  }
+  .hero__statement {
+    font-size: var(--step-2);
+    font-style: italic;
+    max-width: 26ch;
+    margin-top: var(--space-s);
+    text-wrap: balance;
+  }
+  .hero__series-link {
+    display: inline-block;
+    margin-top: var(--space-m);
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    letter-spacing: 0.02em;
+    color: #f4f3ef;
+    border-bottom: 1px solid rgba(244, 243, 239, 0.4);
+    padding-bottom: 2px;
+  }
+  .hero__series-link:hover {
+    text-decoration: none;
+    border-bottom-color: #f4f3ef;
+  }
+
+  /* ---- Body blocks ---- */
+  .home-body {
+    max-width: 78rem;
     margin-inline: auto;
     padding: var(--space-2xl) var(--pad-inline);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xl);
   }
-  .scaffold__eyebrow {
-    color: var(--safelight);
-    font-size: var(--step--1);
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
+  .block__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-m);
+    padding-bottom: var(--space-s);
+    border-bottom: var(--rule);
+    margin-bottom: var(--space-l);
   }
-  .scaffold__lede {
+  .block__title {
     font-size: var(--step-2);
-    color: var(--ink);
-    font-style: italic;
-    max-width: 32ch;
   }
-  .scaffold__note {
+  .block__more {
+    font-size: var(--step--1);
     color: var(--ink-soft);
-    max-width: 56ch;
+    white-space: nowrap;
+  }
+  .block__more:hover {
+    color: var(--safelight);
+    text-decoration: none;
+  }
+
+  .latest {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+    gap: var(--space-l) var(--space-xl);
+  }
+  .latest__link {
+    display: block;
+    color: inherit;
+  }
+  .latest__link:hover {
+    text-decoration: none;
+  }
+  .latest__title {
+    font-size: var(--step-1);
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .latest__link:hover .latest__title {
+    color: var(--safelight);
+  }
+  .latest__dek {
+    color: var(--ink-soft);
+    margin-top: 0.3rem;
+    max-width: 50ch;
+  }
+  .latest__date {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: var(--step--1);
+    color: var(--ink-soft);
+  }
+
+  .featured {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+    gap: var(--space-l) var(--space-xl);
+  }
+  .featured__link {
+    display: block;
+    color: inherit;
+  }
+  .featured__link:hover {
+    text-decoration: none;
+  }
+  .featured__link :global(.featured__cover) {
+    margin: 0;
+  }
+  .featured__title {
+    font-size: var(--step-1);
+    margin-top: var(--space-s);
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .featured__link:hover .featured__title {
+    color: var(--safelight);
+  }
+  .featured__meta {
+    font-size: var(--step--1);
+    color: var(--ink-soft);
+    margin-top: 0.2rem;
+  }
+
+  @media (max-width: 38rem) {
+    .hero__plate {
+      padding-bottom: var(--space-l);
+    }
   }
 </style>

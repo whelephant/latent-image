@@ -1,0 +1,119 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE } from '../consts';
+
+const colophon = [
+  ['Reading & display', 'Newsreader, a free variable serif with true optical sizing — one face for body and headings, sized by optical axis rather than swapping families.'],
+  ['Captions & data', 'JetBrains Mono. Camera data is data, so it is set in a data face; mono also keeps marginalia distinct from prose.'],
+  ['Fonts', 'Self-hosted as woff2 and committed to the repo — no third-party CDN, for longevity and speed.'],
+  ['Built with', 'Astro with MDX, static output. Content lives as Markdown/MDX files in git: durable, versioned, plain.'],
+  ['Images', 'Processed at build into AVIF and WebP with responsive sizes and a blurred placeholder — which doubles as the “latent” state photographs develop out of.'],
+  ['Colour', 'A near-monochrome “darkroom neutral” interface so the photographs supply all the colour; a single safelight red for links and focus.'],
+  ['Principles', 'Few pages, each composed. Semantic HTML, full keyboard operability, motion that respects prefers-reduced-motion and never carries meaning.'],
+];
+---
+
+<Base title="About & Colophon" description="Who makes this, and how it is built.">
+  <article class="about">
+    <header class="about__head">
+      <h1>About</h1>
+    </header>
+
+    <div class="about__prose">
+      <p class="about__lede">
+        {SITE.name} is a personal home for two practices that turn out to be the
+        same practice: writing things down slowly, and photographing the light
+        before it has decided what it is.
+      </p>
+      <p>
+        The essays here are long-form and meant to be read at length; the
+        photographs are arranged as deliberate series rather than a feed. The
+        site doubles, quietly, as a portfolio — so what matters is restraint and
+        authorship, not cleverness.
+      </p>
+      <p class="about__contact mono">
+        Elsewhere: <a href="/rss.xml">RSS</a>
+      </p>
+    </div>
+
+    <section class="colophon" aria-labelledby="colophon-h">
+      <h2 id="colophon-h" class="colophon__title mono">Colophon</h2>
+      <dl class="colophon__list">
+        {
+          colophon.map(([term, desc]) => (
+            <div class="colophon__row">
+              <dt class="mono">{term}</dt>
+              <dd set:html={desc} />
+            </div>
+          ))
+        }
+      </dl>
+    </section>
+  </article>
+</Base>
+
+<style>
+  .about {
+    max-width: 44rem;
+    margin-inline: auto;
+  }
+  .about__head {
+    margin-bottom: var(--space-l);
+  }
+  .about__prose {
+    font-size: var(--step-0);
+    line-height: var(--lh-body);
+  }
+  .about__prose p {
+    margin-block: var(--space-m);
+  }
+  .about__lede {
+    font-size: var(--step-1);
+    font-style: italic;
+    color: var(--ink);
+  }
+  .about__contact {
+    font-size: var(--step--1);
+    color: var(--ink-soft);
+  }
+
+  .colophon {
+    margin-top: var(--space-2xl);
+    padding-top: var(--space-l);
+    border-top: var(--rule);
+  }
+  .colophon__title {
+    font-size: var(--step--1);
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: var(--space-l);
+  }
+  .colophon__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-m);
+  }
+  .colophon__row {
+    display: grid;
+    grid-template-columns: 12rem 1fr;
+    gap: var(--space-m);
+    align-items: baseline;
+  }
+  .colophon__row dt {
+    font-size: var(--step--1);
+    color: var(--ink-soft);
+    letter-spacing: 0.02em;
+  }
+  .colophon__row dd {
+    margin: 0;
+    color: var(--ink);
+  }
+  @media (max-width: 38rem) {
+    .colophon__row {
+      grid-template-columns: 1fr;
+      gap: 0.25rem;
+    }
+  }
+</style>
