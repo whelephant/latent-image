@@ -10,7 +10,7 @@ import sharp from 'sharp';
 import { mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
-const OUT = path.join(process.cwd(), 'src/assets/series/developing-light');
+const OUT = path.join(process.cwd(), 'src/content/series/developing-light');
 
 // Muted, darkroom-adjacent palettes — the photos supply restrained colour.
 const studies = [
