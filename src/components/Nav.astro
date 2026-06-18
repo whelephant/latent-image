@@ -1,16 +1,21 @@
 ---
 import { NAV } from '../consts';
+import { href } from '../utils/href';
 import Wordmark from './Wordmark.astro';
 import ThemeToggle from './ThemeToggle.astro';
 
 // Mark the active section so the current area reads as "you are here".
+// Compare against base-aware targets so it's correct under a subpath too.
 const path = Astro.url.pathname.replace(/\/$/, '') || '/';
-const isActive = (href: string) => path === href || path.startsWith(href + '/');
+const isActive = (to: string) => {
+  const t = href(to).replace(/\/$/, '') || '/';
+  return path === t || path.startsWith(t + '/');
+};
 ---
 
 <header class="nav" transition:persist="site-nav">
   <nav class="nav__inner" aria-label="Primary">
-    <a class="nav__brand" href="/" aria-label="Latent Image — home">
+    <a class="nav__brand" href={href('/')} aria-label="Latent Image — home">
       <Wordmark />
     </a>
 
@@ -19,7 +24,7 @@ const isActive = (href: string) => path === href || path.startsWith(href + '/');
         NAV.map((item) => (
           <li>
             <a
-              href={item.href}
+              href={href(item.href)}
               class:list={['nav__link', { 'is-active': isActive(item.href) }]}
               aria-current={isActive(item.href) ? 'page' : undefined}
             >

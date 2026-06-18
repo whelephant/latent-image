@@ -3,13 +3,16 @@ import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 
-// Domain is not finalized yet — placeholder used for RSS/canonical/sitemap URLs.
-// Swap this when the real domain is known. (see plan: "Open item to confirm")
-const SITE = 'https://latent-image.example';
+// Deployed to GitHub Pages as a project site: https://whelephant.github.io/latent-image/
+// When a custom domain is ready, set SITE to it and BASE to '/' (then add a
+// public/CNAME file) — the base-aware href() helper handles both cases.
+const SITE = 'https://whelephant.github.io';
+const BASE = '/latent-image';
 
 // https://astro.build/config
 export default defineConfig({
   site: SITE,
+  base: BASE,
   output: 'static',
   integrations: [mdx(), sitemap()],
   // View transitions via <ClientRouter /> in the base layout (astro:transitions).

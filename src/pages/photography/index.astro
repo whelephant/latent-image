@@ -4,6 +4,7 @@ import Base from '../../layouts/Base.astro';
 import Figure from '../../components/Figure.astro';
 import { resolveCover } from '../../utils/series';
 import { formatDate, isoDate } from '../../utils/date';
+import { href } from '../../utils/href';
 
 const all = (await getCollection('series', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
@@ -29,7 +30,7 @@ const series = await Promise.all(
       {
         series.map(({ id, data, cover }) => (
           <li class="series-card">
-            <a href={`/photography/${id}`} class="series-card__link">
+            <a href={href(`/photography/${id}`)} class="series-card__link">
               <Figure
                 image={cover.image}
                 alt={cover.alt}

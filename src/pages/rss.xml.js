@@ -1,6 +1,7 @@
 import rss from '@astrojs/rss';
 import { getCollection } from 'astro:content';
 import { SITE } from '../consts';
+import { href } from '../utils/href';
 
 // Valid feed covering the two page types with real URLs: essays and series
 // (brief §4). Notes render within the writing index rather than as pages, so
@@ -14,14 +15,14 @@ export async function GET(context) {
       title: p.data.title,
       description: p.data.description,
       pubDate: p.data.pubDate,
-      link: `/writing/${p.id}/`,
+      link: href(`/writing/${p.id}/`),
       categories: p.data.tags,
     })),
     ...series.map((s) => ({
       title: `${s.data.title} — photographs`,
       description: s.data.description,
       pubDate: s.data.date,
-      link: `/photography/${s.id}/`,
+      link: href(`/photography/${s.id}/`),
     })),
   ].sort((a, b) => b.pubDate.valueOf() - a.pubDate.valueOf());
 

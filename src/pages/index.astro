@@ -5,6 +5,7 @@ import Wordmark from '../components/Wordmark.astro';
 import Figure from '../components/Figure.astro';
 import { resolveCover } from '../utils/series';
 import { formatDate, isoDate } from '../utils/date';
+import { href } from '../utils/href';
 import { SITE } from '../consts';
 
 // Composed landing, NOT a reverse-chron feed (brief §4). Lead with the single
@@ -55,7 +56,7 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft))
       <p class="hero__statement">{SITE.tagline}</p>
       {
         featured && (
-          <a class="hero__series-link" href={`/photography/${featured.id}`}>
+          <a class="hero__series-link" href={href(`/photography/${featured.id}`)}>
             Currently showing — {featured.data.title}
           </a>
         )
@@ -68,13 +69,13 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft))
     <section class="block" aria-labelledby="latest-h">
       <div class="block__head">
         <h2 id="latest-h" class="block__title">Latest writing</h2>
-        <a class="block__more mono" href="/writing">All writing →</a>
+        <a class="block__more mono" href={href('/writing')}>All writing →</a>
       </div>
       <ul class="latest">
         {
           posts.map((post) => (
             <li class="latest__item">
-              <a class="latest__link" href={`/writing/${post.id}`}>
+              <a class="latest__link" href={href(`/writing/${post.id}`)}>
                 <h3 class="latest__title">{post.data.title}</h3>
                 <p class="latest__dek">{post.data.description}</p>
                 <time class="latest__date mono" datetime={isoDate(post.data.pubDate)}>
@@ -93,12 +94,12 @@ const posts = (await getCollection('posts', ({ data }) => !data.draft))
         <section class="block" aria-labelledby="series-h">
           <div class="block__head">
             <h2 id="series-h" class="block__title">More series</h2>
-            <a class="block__more mono" href="/photography">All photography →</a>
+            <a class="block__more mono" href={href('/photography')}>All photography →</a>
           </div>
           <ul class="featured">
             {featuredCards.map(({ id, data, cover }) => (
               <li class="featured__item">
-                <a class="featured__link" href={`/photography/${id}`}>
+                <a class="featured__link" href={href(`/photography/${id}`)}>
                   <Figure
                     image={cover.image}
                     alt={cover.alt}

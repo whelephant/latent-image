@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import { SITE } from '../consts';
+import { href } from '../utils/href';
 
 const colophon = [
   ['Reading & display', 'Newsreader, a free variable serif with true optical sizing — one face for body and headings, sized by optical axis rather than swapping families.'],
@@ -32,7 +33,7 @@ const colophon = [
         authorship, not cleverness.
       </p>
       <p class="about__contact mono">
-        Elsewhere: <a href="/rss.xml">RSS</a>
+        Elsewhere: <a href={href('/rss.xml')}>RSS</a>
       </p>
     </div>
 

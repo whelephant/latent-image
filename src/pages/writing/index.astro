@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import { formatDate, isoDate } from '../../utils/date';
+import { href } from '../../utils/href';
 
 const posts = (await getCollection('posts', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
@@ -24,7 +25,7 @@ const notes = (await getCollection('notes', ({ data }) => !data.draft)).sort(
         {
           posts.map((post) => (
             <li class="index__item">
-              <a class="index__link" href={`/writing/${post.id}`}>
+              <a class="index__link" href={href(`/writing/${post.id}`)}>
                 <h3 class="index__title">{post.data.title}</h3>
                 <p class="index__dek">{post.data.description}</p>
                 <time class="index__date mono" datetime={isoDate(post.data.pubDate)}>
