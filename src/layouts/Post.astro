@@ -1,0 +1,252 @@
+---
+import Base from './Base.astro';
+import TableOfContents from '../components/TableOfContents.astro';
+import ReadingProgress from '../components/ReadingProgress.astro';
+import { formatDate, isoDate } from '../utils/date';
+import type { CollectionEntry } from 'astro:content';
+
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+interface Props {
+  post: CollectionEntry<'posts'>;
+  headings: Heading[];
+}
+
+const { post, headings } = Astro.props;
+const { title, description, pubDate, updatedDate, dropcap, toc, tags } = post.data;
+const minutes = Math.max(1, Math.round(post.body.split(/\s+/).length / 220));
+---
+
+<Base title={title} description={description}>
+  <ReadingProgress />
+
+  <article class="reading" data-reading>
+    <header class="post-head">
+      <h1 class="post-title">{title}</h1>
+      <p class="post-dek">{description}</p>
+      <p class="post-meta mono">
+        <time datetime={isoDate(pubDate)}>{formatDate(pubDate)}</time>
+        <span aria-hidden="true">·</span>
+        <span>{minutes} min</span>
+        {
+          updatedDate && (
+            <>
+              <span aria-hidden="true">·</span>
+              <span>updated {formatDate(updatedDate)}</span>
+            </>
+          )
+        }
+      </p>
+      {
+        tags.length > 0 && (
+          <ul class="post-tags mono" aria-label="Topics">
+            {tags.map((t) => (
+              <li>{t}</li>
+            ))}
+          </ul>
+        )
+      }
+    </header>
+
+    {toc && <TableOfContents headings={headings} />}
+
+    <div class:list={['prose', { 'prose--dropcap': dropcap }]}>
+      <slot />
+    </div>
+  </article>
+</Base>
+
+<style>
+  /*
+    Reading column + margin track (brief §3c). The container is as wide as
+    column + gutter + margin; prose stays capped at the measure and left-aligned,
+    leaving the right zone empty for sidenotes and margin figures to float into.
+  */
+  .reading {
+    width: min(
+      100% - 2 * var(--pad-inline),
+      calc(var(--measure) + var(--gutter) + var(--margin-track))
+    );
+    margin-inline: auto;
+    position: relative;
+    counter-reset: sidenote;
+  }
+  .reading > * {
+    max-width: var(--measure);
+  }
+
+  /* ---- Header ---- */
+  .post-head {
+    margin-bottom: var(--space-xl);
+  }
+  .post-title {
+    font-size: var(--step-4);
+    margin-bottom: var(--space-s);
+  }
+  .post-dek {
+    font-size: var(--step-1);
+    font-style: italic;
+    color: var(--ink-soft);
+    max-width: 46ch;
+    margin-bottom: var(--space-m);
+  }
+  .post-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6ch;
+    align-items: baseline;
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+  }
+  .post-tags {
+    list-style: none;
+    padding: 0;
+    margin-top: var(--space-xs);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: var(--step--1);
+  }
+  .post-tags li {
+    color: var(--ink-soft);
+    border: var(--rule);
+    border-radius: var(--radius);
+    padding: 0.1rem 0.5rem;
+  }
+
+  /* TOC sits between header and prose; sticky-highlights via IO. */
+  .reading :global(.toc) {
+    margin-bottom: var(--space-xl);
+    padding-block: var(--space-s);
+    border-block: var(--rule);
+  }
+
+  /* ---- Prose typography ---- */
+  .prose {
+    font-size: var(--step-0);
+    line-height: var(--lh-body);
+  }
+  .prose :global(p),
+  .prose :global(ul),
+  .prose :global(ol),
+  .prose :global(blockquote),
+  .prose :global(.pullquote),
+  .prose :global(figure),
+  .prose :global(h2),
+  .prose :global(h3),
+  .prose :global(h4),
+  .prose :global(hr) {
+    margin-block: var(--space-m) 0;
+  }
+  .prose :global(h2) {
+    margin-top: var(--space-xl);
+  }
+  .prose :global(h3) {
+    margin-top: var(--space-l);
+  }
+  .prose :global(p:first-child) {
+    margin-top: 0;
+  }
+  .prose :global(ul),
+  .prose :global(ol) {
+    padding-left: 1.4em;
+  }
+  .prose :global(li) {
+    margin-block: 0.3em;
+  }
+  .prose :global(li::marker) {
+    color: var(--ink-soft);
+  }
+
+  /* heading anchor offset handled by scroll-padding-top globally */
+  .prose :global(h2),
+  .prose :global(h3),
+  .prose :global(h4) {
+    scroll-margin-top: 5rem;
+  }
+
+  /* Dropcap — sparingly, opt-in per post (brief §3b/§5). */
+  .prose--dropcap :global(> p:first-of-type::first-letter) {
+    float: left;
+    font-size: 3.6em;
+    line-height: 0.78;
+    padding-right: 0.08em;
+    margin-top: 0.05em;
+    font-weight: 480;
+    color: var(--ink);
+  }
+
+  /* Blockquote — citing others. */
+  .prose :global(blockquote) {
+    padding-left: var(--space-m);
+    border-left: 2px solid var(--hairline);
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+  .prose :global(blockquote p) {
+    margin-block: 0.4em;
+  }
+
+  /* Code. */
+  .prose :global(:not(pre) > code) {
+    background: var(--ink-wash);
+    padding: 0.12em 0.34em;
+    border-radius: var(--radius);
+  }
+  .prose :global(pre) {
+    margin-block: var(--space-m);
+    padding: var(--space-s) var(--space-m);
+    border: var(--rule);
+    border-radius: var(--radius);
+    overflow-x: auto;
+    font-size: var(--step--1);
+    line-height: 1.5;
+  }
+
+  /*
+    Figure modes (brief §3c). The full <Figure> with images arrives in the
+    photography milestone; these classes define the three placements.
+  */
+  .prose :global(figure) {
+    margin-block: var(--space-l);
+  }
+  .prose :global(figure img) {
+    border-radius: var(--radius);
+  }
+  .prose :global(figcaption) {
+    font-family: var(--font-mono);
+    font-size: var(--step--1);
+    color: var(--ink-soft);
+    margin-top: 0.6rem;
+    line-height: 1.4;
+  }
+  /* in-column is the default (capped at measure). */
+  .prose :global(.figure--breakout) {
+    max-width: none;
+    width: 100%;
+  }
+  .prose :global(.figure--full) {
+    max-width: 100vw;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    border-radius: 0;
+  }
+  @media (min-width: 60rem) {
+    .prose :global(.figure--margin) {
+      float: right;
+      clear: right;
+      width: var(--margin-track);
+      margin-right: calc(-1 * (var(--margin-track) + var(--gutter)));
+      margin-block: 0.4rem 1rem;
+    }
+  }
+
+  @media (max-width: 38rem) {
+    .post-title {
+      font-size: var(--step-3);
+    }
+  }
+</style>

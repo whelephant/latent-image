@@ -1,0 +1,113 @@
+---
+/*
+  TableOfContents — brad-woods-style, intersection-observer driven (brief §5).
+  Lives in the margin track on wide screens; collapses to a <details> at the top
+  of the article on narrow. Takes Astro's `headings` (from entry.render()).
+*/
+interface Heading {
+  depth: number;
+  slug: string;
+  text: string;
+}
+interface Props {
+  headings: Heading[];
+}
+const { headings } = Astro.props;
+const items = headings.filter((h) => h.depth >= 2 && h.depth <= 3);
+---
+
+{
+  items.length > 1 && (
+    <nav class="toc" aria-label="Table of contents" data-toc>
+      <p class="toc__title mono">Contents</p>
+      <ol class="toc__list">
+        {items.map((h) => (
+          <li class:list={['toc__item', { 'toc__item--sub': h.depth === 3 }]}>
+            <a href={`#${h.slug}`} class="toc__link" data-toc-link={h.slug}>
+              {h.text}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  )
+}
+
+<style>
+  .toc {
+    font-size: var(--step--1);
+    line-height: 1.4;
+  }
+  .toc__title {
+    color: var(--ink-soft);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    margin-bottom: 0.6rem;
+  }
+  .toc__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    border-left: var(--rule);
+  }
+  .toc__item {
+    padding-left: 0.9rem;
+  }
+  .toc__item--sub {
+    padding-left: 1.8rem;
+  }
+  .toc__link {
+    color: var(--ink-soft);
+    text-decoration: none;
+    display: inline-block;
+    transition: color var(--dur-fast) var(--ease-out);
+    text-wrap: pretty;
+  }
+  .toc__link:hover {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .toc__link.is-active {
+    color: var(--ink);
+    font-weight: 560;
+  }
+</style>
+
+<script>
+  function wireToc() {
+    const links = Array.from(
+      document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]')
+    );
+    if (!links.length) return;
+    const bySlug = new Map(links.map((l) => [l.dataset.tocLink, l]));
+    const targets = links
+      .map((l) => document.getElementById(l.dataset.tocLink!))
+      .filter((el): el is HTMLElement => !!el);
+
+    let active: string | null = null;
+    const setActive = (slug: string | null) => {
+      if (slug === active) return;
+      links.forEach((l) => l.classList.remove('is-active'));
+      if (slug) bySlug.get(slug)?.classList.add('is-active');
+      active = slug;
+    };
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // pick the topmost heading currently intersecting the upper viewport
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible.length) setActive(visible[0].target.id);
+      },
+      { rootMargin: '-10% 0px -70% 0px', threshold: 0 }
+    );
+    targets.forEach((t) => observer.observe(t));
+  }
+  wireToc();
+  document.addEventListener('astro:page-load', wireToc);
+</script>
