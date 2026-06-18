@@ -80,7 +80,7 @@ const exifPairs = exif
         {caption && <span class="figure__caption-text">{caption}</span>}
         {exifPairs.length > 0 && (
           <span class="figure__exif mono">
-            {exifPairs.map(([k, v]) => (
+            {exifPairs.map(([, v]) => (
               <span class="figure__exif-item">{v}</span>
             ))}
           </span>

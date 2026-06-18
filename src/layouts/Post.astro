@@ -17,7 +17,6 @@ interface Props {
 
 const { post, headings } = Astro.props;
 const { title, description, pubDate, updatedDate, dropcap, toc, tags } = post.data;
-const minutes = Math.max(1, Math.round(post.body.split(/\s+/).length / 220));
 ---
 
 <Base title={title} description={description}>
@@ -29,8 +28,6 @@ const minutes = Math.max(1, Math.round(post.body.split(/\s+/).length / 220));
       <p class="post-dek">{description}</p>
       <p class="post-meta mono">
         <time datetime={isoDate(pubDate)}>{formatDate(pubDate)}</time>
-        <span aria-hidden="true">·</span>
-        <span>{minutes} min</span>
         {
           updatedDate && (
             <>
