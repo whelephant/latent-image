@@ -1,17 +1,49 @@
 ---
-
+// Temporary landing — exercises layout/theme/type during M0.
+// Replaced by the composed home in Milestone 3.
+import Base from '../layouts/Base.astro';
+import Wordmark from '../components/Wordmark.astro';
+import { SITE } from '../consts';
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<Base bleed>
+  <section class="scaffold">
+    <p class="scaffold__eyebrow mono">latent · developing</p>
+    <Wordmark as="h1" display />
+    <p class="scaffold__lede">{SITE.tagline}</p>
+    <p class="scaffold__note">
+      Foundation in place: darkroom-neutral tokens, self-hosted Newsreader &amp;
+      JetBrains&nbsp;Mono, no-flash <a href="#" data-theme-toggle-hint>light / dark / auto</a>,
+      and view transitions. The composed home arrives in a later milestone.
+    </p>
+  </section>
+</Base>
+
+<style>
+  .scaffold {
+    min-height: calc(100svh - 12rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--space-m);
+    max-width: var(--measure-px);
+    margin-inline: auto;
+    padding: var(--space-2xl) var(--pad-inline);
+  }
+  .scaffold__eyebrow {
+    color: var(--safelight);
+    font-size: var(--step--1);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .scaffold__lede {
+    font-size: var(--step-2);
+    color: var(--ink);
+    font-style: italic;
+    max-width: 32ch;
+  }
+  .scaffold__note {
+    color: var(--ink-soft);
+    max-width: 56ch;
+  }
+</style>

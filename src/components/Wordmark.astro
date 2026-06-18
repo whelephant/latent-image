@@ -1,0 +1,83 @@
+---
+/*
+  Wordmark — the second half of the signature (brief §3d). The site name plays
+  on light: each letter sits "latent" (low-contrast, slightly blurred) and
+  resolves to full clarity on load — one gesture, no more. Under
+  prefers-reduced-motion it renders already-developed.
+
+  Props:
+    as     – heading/element tag (default 'span')
+    display – true for the large hero treatment, false for the nav lockup
+*/
+import { SITE } from '../consts';
+interface Props {
+  as?: string;
+  display?: boolean;
+  class?: string;
+}
+const { as: Tag = 'span', display = false, class: cls = '' } = Astro.props;
+const letters = [...SITE.name];
+---
+
+<Tag class:list={['wordmark', { 'wordmark--display': display }, cls]} aria-label={SITE.name}>
+  {
+    letters.map((ch, i) => (
+      <span
+        class="wordmark__glyph"
+        aria-hidden="true"
+        style={`--i:${i}`}
+        data-space={ch === ' ' ? '' : undefined}
+      >
+        {ch === ' ' ? ' ' : ch}
+      </span>
+    ))
+  }
+</Tag>
+
+<style>
+  .wordmark {
+    font-family: var(--font-serif);
+    font-weight: 520;
+    letter-spacing: -0.012em;
+    color: var(--ink);
+    display: inline-flex;
+    white-space: pre;
+  }
+  .wordmark--display {
+    font-size: var(--step-5);
+    font-weight: 440;
+    letter-spacing: -0.022em;
+    line-height: 0.98;
+  }
+
+  /* The latent -> developed resolve. Glyphs begin blurred and faint, then
+     "expose" into focus, lightly staggered. Performance technique in a costume. */
+  .wordmark__glyph {
+    display: inline-block;
+    animation: develop-glyph var(--dur-slow) var(--ease-out) backwards;
+    animation-delay: calc(var(--i) * 45ms + 80ms);
+  }
+  .wordmark--display .wordmark__glyph {
+    animation-delay: calc(var(--i) * 70ms + 120ms);
+  }
+
+  @keyframes develop-glyph {
+    from {
+      opacity: 0;
+      filter: blur(6px);
+      transform: translateY(0.06em);
+    }
+    to {
+      opacity: 1;
+      filter: blur(0);
+      transform: none;
+    }
+  }
+
+  /* Signature must never be load-bearing: appear fully developed at rest. */
+  @media (prefers-reduced-motion: reduce) {
+    .wordmark__glyph {
+      animation: none;
+    }
+  }
+</style>

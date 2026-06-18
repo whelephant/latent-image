@@ -1,0 +1,58 @@
+---
+import { SITE } from '../consts';
+const year = new Date().getFullYear();
+---
+
+<footer class="footer">
+  <div class="footer__inner">
+    <p class="footer__mark">{SITE.name}</p>
+    <nav class="footer__links mono" aria-label="Footer">
+      <a href="/about">Colophon</a>
+      <a href="/writing">Writing</a>
+      <a href="/photography">Photography</a>
+      <a href="/rss.xml">RSS</a>
+    </nav>
+    <p class="footer__fine mono">© {year} · built to last</p>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    border-top: var(--rule);
+    margin-top: var(--space-2xl);
+    background: var(--paper);
+  }
+  .footer__inner {
+    max-width: 78rem;
+    margin-inline: auto;
+    padding: var(--space-l) var(--pad-inline) var(--space-xl);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-s) var(--space-l);
+  }
+  .footer__mark {
+    font-size: var(--step-1);
+    color: var(--ink);
+  }
+  .footer__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-m);
+    font-size: var(--step--1);
+    margin-inline-start: auto;
+  }
+  .footer__links a {
+    color: var(--ink-soft);
+  }
+  .footer__links a:hover {
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .footer__fine {
+    width: 100%;
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+    letter-spacing: 0.02em;
+  }
+</style>
