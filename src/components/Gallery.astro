@@ -1,0 +1,96 @@
+---
+import { getImage } from 'astro:assets';
+import Figure from './Figure.astro';
+import type { ResolvedPhoto } from '../utils/series';
+
+/*
+  Gallery — masonry grid that preserves each photograph's aspect ratio
+  (brief §5). Thumbnails are buttons that open the shared Lightbox; the full
+  WebP for the lightbox is generated at build via getImage so a single image is
+  shareable and loads sharp.
+*/
+interface Props {
+  photos: ResolvedPhoto[];
+}
+const { photos } = Astro.props;
+
+const items = await Promise.all(
+  photos.map(async (p, i) => {
+    const large = await getImage({
+      src: p.image,
+      format: 'webp',
+      width: Math.min(1920, p.image.width),
+    });
+    const exifList = p.exif
+      ? Object.values(p.exif).filter((v): v is string => !!v)
+      : [];
+    return { i, p, largeSrc: large.src, exifList };
+  })
+);
+---
+
+<ul class="gallery" data-gallery>
+  {
+    items.map(({ i, p, largeSrc, exifList }) => (
+      <li class="gallery__cell">
+        <button
+          type="button"
+          class="gallery__btn"
+          data-index={i}
+          data-full={largeSrc}
+          data-w={p.image.width}
+          data-h={p.image.height}
+          data-alt={p.alt}
+          data-caption={p.caption ?? ''}
+          data-exif={JSON.stringify(exifList)}
+          aria-label={`Open photograph: ${p.alt}`}
+        >
+          <Figure
+            image={p.image}
+            alt={p.alt}
+            lqip={p.lqip}
+            mode="in-column"
+            sizes="(min-width: 60rem) 30vw, (min-width: 34rem) 45vw, 92vw"
+            class="gallery__fig"
+          />
+        </button>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .gallery {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    columns: 3 16rem;
+    column-gap: var(--space-m);
+  }
+  .gallery__cell {
+    break-inside: avoid;
+    margin-bottom: var(--space-m);
+  }
+  .gallery__btn {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: zoom-in;
+    border-radius: var(--radius);
+  }
+  .gallery__btn :global(.gallery__fig) {
+    margin: 0;
+  }
+  .gallery__btn :global(.figure__frame) {
+    transition: transform var(--dur) var(--ease-out);
+  }
+  .gallery__btn:hover :global(.figure__frame) {
+    transform: translateY(-2px);
+  }
+  .gallery__btn:focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: 3px;
+  }
+</style>

@@ -1,0 +1,211 @@
+---
+import { Picture } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+/*
+  Figure — responsive <picture> (AVIF + WebP) with intrinsic dimensions (no CLS,
+  brief §6) and the latent->developed reveal (brief §3d). Three placements:
+  in-column (default), breakout (past the measure), margin (into the margin
+  track), full (full-bleed).
+
+  The LQIP is painted instantly as a blurred backdrop; the sharp image fades and
+  de-blurs on load. With JS off it simply shows; under reduced-motion it appears
+  already developed (no animation). LCP/hero images pass priority to skip the
+  latent delay.
+*/
+interface Props {
+  image: ImageMetadata;
+  alt: string;
+  lqip?: string;
+  mode?: 'in-column' | 'breakout' | 'margin' | 'full';
+  caption?: string;
+  exif?: Record<string, string | undefined>;
+  priority?: boolean;
+  sizes?: string;
+  class?: string;
+}
+
+const {
+  image,
+  alt,
+  lqip,
+  mode = 'in-column',
+  caption,
+  exif,
+  priority = false,
+  sizes,
+  class: cls = '',
+} = Astro.props;
+
+const widths = [480, 768, 1024, 1440, 1920].filter((w) => w <= image.width);
+if (widths.at(-1) !== image.width) widths.push(image.width);
+
+const defaultSizes =
+  mode === 'full'
+    ? '100vw'
+    : mode === 'margin'
+      ? '(min-width: 60rem) 16rem, 100vw'
+      : 'min(65ch, 100vw - 3rem)';
+
+const exifPairs = exif
+  ? Object.entries(exif).filter(([, v]) => v)
+  : [];
+---
+
+<figure
+  class:list={['figure', `figure--${mode}`, cls]}
+>
+  <div
+    class="figure__frame"
+    style={lqip ? `background-image:url(${lqip})` : undefined}
+  >
+    <Picture
+      src={image}
+      alt={alt}
+      formats={['avif', 'webp']}
+      fallbackFormat="jpg"
+      widths={widths}
+      sizes={sizes ?? defaultSizes}
+      loading={priority ? 'eager' : 'lazy'}
+      decoding={priority ? 'auto' : 'async'}
+      fetchpriority={priority ? 'high' : 'auto'}
+      class="figure__img"
+      data-develop={priority ? undefined : ''}
+    />
+  </div>
+
+  {
+    (caption || exifPairs.length > 0) && (
+      <figcaption class="figure__cap">
+        {caption && <span class="figure__caption-text">{caption}</span>}
+        {exifPairs.length > 0 && (
+          <span class="figure__exif mono">
+            {exifPairs.map(([k, v]) => (
+              <span class="figure__exif-item">{v}</span>
+            ))}
+          </span>
+        )}
+      </figcaption>
+    )
+  }
+</figure>
+
+<style>
+  .figure {
+    margin-block: var(--space-l);
+  }
+  .figure__frame {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--mat);
+    background-size: cover;
+    background-position: center;
+    border-radius: var(--radius);
+    line-height: 0;
+  }
+  .figure__img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  /* Latent -> developed. Only engaged when JS is present (html.js); without JS
+     the image shows normally. */
+  :global(html.js) .figure__img[data-develop] {
+    opacity: 0;
+    filter: blur(14px);
+    transform: scale(1.04);
+    transition:
+      opacity var(--dur-slow) var(--ease-out),
+      filter var(--dur-slow) var(--ease-out),
+      transform var(--dur-slow) var(--ease-out);
+    will-change: opacity, filter;
+  }
+  :global(html.js) .figure__img[data-develop].is-developed {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(html.js) .figure__img[data-develop] {
+      opacity: 1;
+      filter: none;
+      transform: none;
+      transition: none;
+    }
+  }
+
+  /* ---- Caption / EXIF (mono — data face, brief §6) ---- */
+  .figure__cap {
+    margin-top: 0.6rem;
+    font-size: var(--step--1);
+    color: var(--ink-soft);
+    line-height: 1.4;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .figure__caption-text {
+    font-family: var(--font-serif);
+    font-style: italic;
+    color: var(--ink);
+  }
+  .figure__exif {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem 1rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.01em;
+  }
+
+  /* ---- Modes ---- */
+  .figure--breakout {
+    max-width: none;
+    width: 100%;
+  }
+  .figure--full {
+    max-width: 100vw;
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+  }
+  .figure--full .figure__frame {
+    border-radius: 0;
+  }
+  @media (min-width: 60rem) {
+    .figure--margin {
+      float: right;
+      clear: right;
+      width: var(--margin-track);
+      margin-right: calc(-1 * (var(--margin-track) + var(--gutter)));
+      margin-block: 0.4rem 1rem;
+    }
+    .figure--margin .figure__cap {
+      font-size: 0.78rem;
+    }
+  }
+</style>
+
+<script>
+  // Engage the latent treatment + develop images on load. Idempotent across
+  // view transitions.
+  function developImages() {
+    document.documentElement.classList.add('js');
+    const imgs = document.querySelectorAll<HTMLImageElement>(
+      'img.figure__img[data-develop]'
+    );
+    imgs.forEach((img) => {
+      if (img.dataset.wired) return;
+      img.dataset.wired = '1';
+      const done = () => img.classList.add('is-developed');
+      if (img.complete && img.naturalWidth > 0) {
+        // already cached — develop on next frame so the transition can run
+        requestAnimationFrame(() => requestAnimationFrame(done));
+      } else {
+        img.addEventListener('load', done, { once: true });
+        img.addEventListener('error', done, { once: true });
+      }
+    });
+  }
+  developImages();
+  document.addEventListener('astro:page-load', developImages);
+</script>

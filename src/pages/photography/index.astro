@@ -1,0 +1,116 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Figure from '../../components/Figure.astro';
+import { resolveCover } from '../../utils/series';
+import { formatDate, isoDate } from '../../utils/date';
+
+const all = (await getCollection('series', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+
+const series = await Promise.all(
+  all.map(async (entry) => ({
+    id: entry.id,
+    data: entry.data,
+    cover: await resolveCover(entry.id, entry.data.cover, entry.data.coverAlt),
+  }))
+);
+---
+
+<Base title="Photography" description="Photographic series, presented as small monographs.">
+  <div class="page">
+    <header class="page-head">
+      <h1>Photography</h1>
+      <p class="page-dek">Series, each made and sequenced as a small monograph.</p>
+    </header>
+
+    <ul class="series-list">
+      {
+        series.map(({ id, data, cover }) => (
+          <li class="series-card">
+            <a href={`/photography/${id}`} class="series-card__link">
+              <Figure
+                image={cover.image}
+                alt={cover.alt}
+                lqip={cover.lqip}
+                mode="in-column"
+                sizes="(min-width: 50rem) 48rem, 92vw"
+                class="series-card__cover"
+              />
+              <div class="series-card__body">
+                <h2 class="series-card__title">{data.title}</h2>
+                <p class="series-card__dek">{data.description}</p>
+                <p class="series-card__meta mono">
+                  <time datetime={isoDate(data.date)}>{formatDate(data.date)}</time>
+                  {data.place && <><span aria-hidden="true">·</span><span>{data.place}</span></>}
+                </p>
+              </div>
+            </a>
+          </li>
+        ))
+      }
+      {series.length === 0 && <li class="series-empty">No series yet.</li>}
+    </ul>
+  </div>
+</Base>
+
+<style>
+  .page {
+    max-width: 52rem;
+    margin-inline: auto;
+  }
+  .page-head {
+    margin-bottom: var(--space-xl);
+  }
+  .page-dek {
+    font-size: var(--step-1);
+    font-style: italic;
+    color: var(--ink-soft);
+    margin-top: var(--space-s);
+  }
+  .series-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xl);
+  }
+  .series-card__link {
+    display: block;
+    color: inherit;
+  }
+  .series-card__link:hover {
+    text-decoration: none;
+  }
+  .series-card__link :global(.series-card__cover) {
+    margin: 0;
+  }
+  .series-card__body {
+    margin-top: var(--space-m);
+  }
+  .series-card__title {
+    font-size: var(--step-3);
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .series-card__link:hover .series-card__title {
+    color: var(--safelight);
+  }
+  .series-card__dek {
+    color: var(--ink-soft);
+    font-style: italic;
+    margin-top: 0.4rem;
+    max-width: 50ch;
+  }
+  .series-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6ch;
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+    margin-top: var(--space-s);
+  }
+  .series-empty {
+    color: var(--ink-soft);
+  }
+</style>

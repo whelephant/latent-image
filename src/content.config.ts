@@ -37,40 +37,46 @@ const notes = defineCollection({
   }),
 });
 
+const exif = z
+  .object({
+    camera: z.string().optional(),
+    lens: z.string().optional(),
+    focal: z.string().optional(),
+    shutter: z.string().optional(),
+    aperture: z.string().optional(),
+    iso: z.string().optional(),
+  })
+  .optional();
+
 const series = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/series' }),
-  schema: ({ image }) =>
-    z.object({
-      title: z.string(),
-      description: z.string(),
-      date: z.coerce.date(),
-      place: z.string().optional(),
-      draft: z.boolean().default(false),
-      featured: z.boolean().default(false),
-      cover: image(),
-      coverAlt: z.string(),
-      /* ordered photographs; each carries alt (required) + optional caption/EXIF.
-         EXIF is data, so it is rendered in the mono face. */
-      photos: z
-        .array(
-          z.object({
-            src: image(),
-            alt: z.string(),
-            caption: z.string().optional(),
-            exif: z
-              .object({
-                camera: z.string().optional(),
-                lens: z.string().optional(),
-                focal: z.string().optional(),
-                shutter: z.string().optional(),
-                aperture: z.string().optional(),
-                iso: z.string().optional(),
-              })
-              .optional(),
-          })
-        )
-        .default([]),
-    }),
+  /*
+    Photos are referenced by filename; the series page resolves them against
+    src/assets/series/<id>/ via import.meta.glob (which gives both the
+    optimisable ImageMetadata and the on-disk path for LQIP generation).
+    EXIF is data, so it is set in the mono face (brief §6).
+  */
+  schema: z.object({
+    title: z.string(),
+    description: z.string(),
+    date: z.coerce.date(),
+    place: z.string().optional(),
+    draft: z.boolean().default(false),
+    featured: z.boolean().default(false),
+    placeholderNote: z.boolean().default(false),
+    cover: z.string(),
+    coverAlt: z.string(),
+    photos: z
+      .array(
+        z.object({
+          file: z.string(),
+          alt: z.string(),
+          caption: z.string().optional(),
+          exif,
+        })
+      )
+      .default([]),
+  }),
 });
 
 export const collections = { posts, notes, series };

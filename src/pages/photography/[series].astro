@@ -1,0 +1,90 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Gallery from '../../components/Gallery.astro';
+import Lightbox from '../../components/Lightbox.astro';
+import { resolvePhotos } from '../../utils/series';
+import { formatDate, isoDate } from '../../utils/date';
+
+export async function getStaticPaths() {
+  const all = await getCollection('series', ({ data }) => !data.draft);
+  return all.map((entry) => ({ params: { series: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const { title, description, date, place, placeholderNote } = entry.data;
+const photos = await resolvePhotos(entry.id, entry.data.photos);
+---
+
+<Base title={title} description={description}>
+  <article class="series">
+    <header class="series__intro">
+      <h1 class="series__title">{title}</h1>
+      <p class="series__dek">{description}</p>
+      <p class="series__meta mono">
+        <time datetime={isoDate(date)}>{formatDate(date)}</time>
+        {place && <><span aria-hidden="true">·</span><span>{place}</span></>}
+        <span aria-hidden="true">·</span>
+        <span>{photos.length} photographs</span>
+      </p>
+      <div class="series__note">
+        <Content />
+      </div>
+      {
+        placeholderNote && (
+          <p class="series__placeholder mono">
+            Note — these are generated tonal placeholders demonstrating the image
+            pipeline. Replace src/assets/series/ with real photographs.
+          </p>
+        )
+      }
+    </header>
+
+    <Gallery photos={photos} />
+  </article>
+
+  <Lightbox />
+</Base>
+
+<style>
+  .series__intro {
+    max-width: 46rem;
+    margin: 0 auto var(--space-2xl);
+  }
+  .series__title {
+    font-size: var(--step-4);
+  }
+  .series__dek {
+    font-size: var(--step-1);
+    font-style: italic;
+    color: var(--ink-soft);
+    margin-top: var(--space-s);
+    max-width: 44ch;
+  }
+  .series__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6ch;
+    color: var(--ink-soft);
+    font-size: var(--step--1);
+    margin-top: var(--space-m);
+  }
+  .series__note {
+    margin-top: var(--space-l);
+    color: var(--ink);
+    max-width: 60ch;
+  }
+  .series__note :global(p) {
+    margin-block: var(--space-s);
+  }
+  .series__placeholder {
+    margin-top: var(--space-l);
+    padding: var(--space-s) var(--space-m);
+    border: var(--rule);
+    border-left: 2px solid var(--safelight);
+    border-radius: var(--radius);
+    font-size: var(--step--1);
+    color: var(--ink-soft);
+  }
+</style>
