@@ -22,6 +22,9 @@ interface Props {
   exif?: Record<string, string | undefined>;
   priority?: boolean;
   sizes?: string;
+  /* render a <div> wrapper with no <figcaption> — for use inside interactive
+     parents (e.g. a gallery <button>, where nesting <figure> would be invalid) */
+  bare?: boolean;
   class?: string;
 }
 
@@ -34,6 +37,7 @@ const {
   exif,
   priority = false,
   sizes,
+  bare = false,
   class: cls = '',
 } = Astro.props;
 
@@ -45,16 +49,20 @@ const defaultSizes =
     ? '100vw'
     : mode === 'margin'
       ? '(min-width: 60rem) 16rem, 100vw'
-      : 'min(65ch, 100vw - 3rem)';
+      : mode === 'breakout'
+        ? '(min-width: 60rem) 58rem, calc(100vw - 3rem)'
+        : 'min(65ch, calc(100vw - 3rem))';
 
-const exifPairs = exif
-  ? Object.entries(exif).filter(([, v]) => v)
+// EXIF is data — render in the brief's fixed order, not frontmatter key order.
+const EXIF_ORDER = ['camera', 'lens', 'focal', 'shutter', 'aperture', 'iso'] as const;
+const exifValues = exif
+  ? EXIF_ORDER.map((k) => exif[k]).filter((v): v is string => !!v)
   : [];
+
+const Wrapper = bare ? 'div' : 'figure';
 ---
 
-<figure
-  class:list={['figure', `figure--${mode}`, cls]}
->
+<Wrapper class:list={['figure', `figure--${mode}`, cls]}>
   <div
     class="figure__frame"
     style={lqip ? `background-image:url(${lqip})` : undefined}
@@ -75,12 +83,12 @@ const exifPairs = exif
   </div>
 
   {
-    (caption || exifPairs.length > 0) && (
+    !bare && (caption || exifValues.length > 0) && (
       <figcaption class="figure__cap">
         {caption && <span class="figure__caption-text">{caption}</span>}
-        {exifPairs.length > 0 && (
+        {exifValues.length > 0 && (
           <span class="figure__exif mono">
-            {exifPairs.map(([, v]) => (
+            {exifValues.map((v) => (
               <span class="figure__exif-item">{v}</span>
             ))}
           </span>
@@ -88,7 +96,7 @@ const exifPairs = exif
       </figcaption>
     )
   }
-</figure>
+</Wrapper>
 
 <style>
   .figure {
@@ -186,24 +194,59 @@ const exifPairs = exif
 </style>
 
 <script>
-  // Engage the latent treatment + develop images on load. Idempotent across
-  // view transitions.
+  // Develop each photograph as it ENTERS the viewport (brief §3d), not merely on
+  // load. Idempotent across view transitions; priority/hero images have no
+  // [data-develop] so they appear immediately (LCP-friendly).
+  function reveal(img: HTMLImageElement) {
+    const frame = img.closest<HTMLElement>('.figure__frame');
+    const done = () => {
+      img.classList.add('is-developed');
+      // Drop the LQIP backdrop once developed so it can't bleed through any
+      // transparent pixels; wait for the fade so the develop effect still plays.
+      if (frame && frame.style.backgroundImage) {
+        const clear = () => (frame.style.backgroundImage = '');
+        img.addEventListener('transitionend', clear, { once: true });
+        // fallback if no transition (reduced motion / cached)
+        setTimeout(clear, 800);
+      }
+    };
+    if (img.complete && img.naturalWidth > 0) {
+      requestAnimationFrame(() => requestAnimationFrame(done));
+    } else {
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
+    }
+  }
+
   function developImages() {
     document.documentElement.classList.add('js');
-    const imgs = document.querySelectorAll<HTMLImageElement>(
-      'img.figure__img[data-develop]'
+    const imgs = Array.from(
+      document.querySelectorAll<HTMLImageElement>(
+        'img.figure__img[data-develop]:not([data-wired])'
+      )
+    );
+    if (!imgs.length) return;
+    if (!('IntersectionObserver' in window)) {
+      imgs.forEach((img) => {
+        img.dataset.wired = '1';
+        reveal(img);
+      });
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries, obs) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            obs.unobserve(e.target);
+            reveal(e.target as HTMLImageElement);
+          }
+        });
+      },
+      { rootMargin: '200px 0px' }
     );
     imgs.forEach((img) => {
-      if (img.dataset.wired) return;
       img.dataset.wired = '1';
-      const done = () => img.classList.add('is-developed');
-      if (img.complete && img.naturalWidth > 0) {
-        // already cached — develop on next frame so the transition can run
-        requestAnimationFrame(() => requestAnimationFrame(done));
-      } else {
-        img.addEventListener('load', done, { once: true });
-        img.addEventListener('error', done, { once: true });
-      }
+      io.observe(img);
     });
   }
   developImages();

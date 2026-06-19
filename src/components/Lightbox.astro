@@ -9,11 +9,19 @@
 
 <dialog class="lb" data-lightbox aria-label="Photograph viewer">
   <div class="lb__stage" data-lb-stage>
-    <img class="lb__img" data-lb-img alt="" />
+    {/* focusable + button-role so zoom is reachable by keyboard (Enter/Space) */}
+    <img
+      class="lb__img"
+      data-lb-img
+      alt=""
+      tabindex="0"
+      role="button"
+      aria-label="Zoom photograph in or out"
+    />
   </div>
 
   <div class="lb__chrome">
-    <p class="lb__meta">
+    <p class="lb__meta" aria-live="polite">
       <span class="lb__count mono" data-lb-count></span>
       <span class="lb__caption" data-lb-caption></span>
       <span class="lb__exif mono" data-lb-exif></span>
@@ -169,8 +177,10 @@
     if (!dialog || (dialog as any).__wired) return;
     (dialog as any).__wired = true;
 
+    // Identity = DOM order across ALL gallery buttons, so multiple galleries on
+    // one page don't collide (per-gallery indices would restart at 0).
     const buttons = Array.from(
-      document.querySelectorAll<HTMLButtonElement>('[data-gallery] [data-index]')
+      document.querySelectorAll<HTMLButtonElement>('[data-gallery] [data-full]')
     );
     if (!buttons.length) return;
 
@@ -181,15 +191,26 @@
       exif: JSON.parse(b.dataset.exif || '[]'),
     }));
 
+    const single = items.length < 2;
+
     const img = dialog.querySelector<HTMLImageElement>('[data-lb-img]')!;
     const countEl = dialog.querySelector<HTMLElement>('[data-lb-count]')!;
     const capEl = dialog.querySelector<HTMLElement>('[data-lb-caption]')!;
     const exifEl = dialog.querySelector<HTMLElement>('[data-lb-exif]')!;
     const stage = dialog.querySelector<HTMLElement>('[data-lb-stage]')!;
+    const prevBtn = dialog.querySelector<HTMLButtonElement>('[data-lb-prev]')!;
+    const nextBtn = dialog.querySelector<HTMLButtonElement>('[data-lb-next]')!;
+
+    // A single photo has no prev/next — hide the arrows entirely.
+    if (single) {
+      prevBtn.hidden = true;
+      nextBtn.hidden = true;
+    }
 
     let index = 0;
     let lastFocus: HTMLElement | null = null;
     let zoomed = false;
+    let prevOverflow = '';
 
     const render = () => {
       const it = items[index];
@@ -198,10 +219,12 @@
       tmp.onload = () => dialog.classList.remove('is-switching');
       tmp.src = it.full;
       img.src = it.full;
-      img.alt = it.alt;
-      countEl.textContent = `${index + 1} / ${items.length}`;
+      countEl.textContent = single ? '' : `${index + 1} / ${items.length}`;
       capEl.textContent = it.caption;
       exifEl.textContent = it.exif.join('  ·  ');
+      // Dynamic, descriptive name for the dialog (the <img> is the zoom button).
+      const pos = single ? '' : ` (${index + 1} of ${items.length})`;
+      dialog.setAttribute('aria-label', `${it.alt || 'Photograph'}${pos}`);
       resetZoom();
     };
 
@@ -220,6 +243,8 @@
       lastFocus = focusReturn;
       render();
       if (!dialog.open) dialog.showModal();
+      // Lock body scroll, preserving any pre-existing inline value.
+      prevOverflow = document.documentElement.style.overflow;
       document.documentElement.style.overflow = 'hidden';
       setHash();
     };
@@ -229,6 +254,7 @@
     };
 
     const go = (delta: number) => {
+      if (single) return;
       index = (index + delta + items.length) % items.length;
       render();
       setHash();
@@ -243,12 +269,8 @@
     );
 
     dialog.querySelector('[data-lb-close]')!.addEventListener('click', close);
-    dialog
-      .querySelector('[data-lb-prev]')!
-      .addEventListener('click', () => go(-1));
-    dialog
-      .querySelector('[data-lb-next]')!
-      .addEventListener('click', () => go(1));
+    prevBtn.addEventListener('click', () => go(-1));
+    nextBtn.addEventListener('click', () => go(1));
 
     // click on backdrop / outside image closes; on image toggles zoom
     dialog.addEventListener('click', (e) => {
@@ -256,25 +278,37 @@
     });
     img.addEventListener('click', (e) => {
       e.stopPropagation();
-      toggleZoom(e);
+      toggleZoom(e.clientX, e.clientY);
+    });
+    // keyboard zoom — the <img> is role=button, tabindex 0
+    img.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleZoom(); // no point -> zoom from centre
+      }
     });
 
-    function toggleZoom(e: MouseEvent) {
-      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // originX/Y in client coords; omitted -> zoom from centre (keyboard).
+    function toggleZoom(originX?: number, originY?: number) {
       zoomed = !zoomed;
       img.classList.toggle('is-zoomed', zoomed);
-      if (zoomed && !reduce) {
-        const r = img.getBoundingClientRect();
-        const ox = ((e.clientX - r.left) / r.width) * 100;
-        const oy = ((e.clientY - r.top) / r.height) * 100;
-        img.style.transformOrigin = `${ox}% ${oy}%`;
+      img.setAttribute('aria-pressed', String(zoomed));
+      if (zoomed) {
+        if (originX != null && originY != null) {
+          const r = img.getBoundingClientRect();
+          const ox = ((originX - r.left) / r.width) * 100;
+          const oy = ((originY - r.top) / r.height) * 100;
+          img.style.transformOrigin = `${ox}% ${oy}%`;
+        } else {
+          img.style.transformOrigin = 'center center';
+        }
         img.style.transform = 'scale(2.2)';
       } else {
         img.style.transform = '';
       }
     }
 
-    // keyboard
+    // keyboard nav (Esc handled natively by <dialog>)
     dialog.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
@@ -283,20 +317,22 @@
         e.preventDefault();
         go(1);
       }
-      // Esc handled natively by <dialog>
     });
 
     // restore focus + scroll on close
     dialog.addEventListener('close', () => {
-      document.documentElement.style.overflow = '';
+      document.documentElement.style.overflow = prevOverflow;
       history.replaceState(null, '', window.location.pathname + window.location.search);
       lastFocus?.focus();
     });
 
-    // touch swipe
+    // touch swipe (reset robustly so a cancelled/leaving pointer can't stick)
     let sx = 0,
       sy = 0,
       tracking = false;
+    const endTrack = () => {
+      tracking = false;
+    };
     stage.addEventListener(
       'pointerdown',
       (e) => {
@@ -316,6 +352,8 @@
         go(dx < 0 ? 1 : -1);
       }
     });
+    stage.addEventListener('pointercancel', endTrack);
+    stage.addEventListener('pointerleave', endTrack);
 
     // deep link: open on load if #p-N matches
     const m = window.location.hash.match(/^#p-(\d+)$/);

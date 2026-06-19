@@ -41,6 +41,10 @@ body {
   text-rendering: optimizeLegibility;
   font-feature-settings: 'kern', 'liga', 'onum' 1; /* oldstyle figures in prose */
   min-height: 100svh;
+  /* Contain the full-bleed (100vw) figures' overflow when a vertical scrollbar
+     is present, without making body a scroll container (clip, not hidden — so
+     the sticky nav still works). */
+  overflow-x: clip;
   transition: background-color var(--dur) var(--ease-out),
     color var(--dur) var(--ease-out);
 }

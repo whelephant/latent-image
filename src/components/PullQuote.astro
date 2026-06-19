@@ -1,8 +1,8 @@
 ---
 /*
-  PullQuote — a breakout emphasis quote for essays. Distinct from <blockquote>
-  (which cites others); this lifts a line from the prose itself. Set larger,
-  optionally extending into the margin.
+  PullQuote — an emphasis quote for essays. Distinct from <blockquote> (which
+  cites others); this lifts a line from the prose itself, set larger with a
+  safelight rule. Sits in the reading column.
   Usage:  <PullQuote>The line worth slowing down for.</PullQuote>
 */
 interface Props {
@@ -11,7 +11,7 @@ interface Props {
 const { cite } = Astro.props;
 ---
 
-<aside class="pullquote breakout">
+<aside class="pullquote">
   <p>“<slot />”</p>
   {cite && <cite class="mono">— {cite}</cite>}
 </aside>

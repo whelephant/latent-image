@@ -26,10 +26,14 @@ export async function GET(context) {
     })),
   ].sort((a, b) => b.pubDate.valueOf() - a.pubDate.valueOf());
 
+  // Channel <link> must include the base path (project-site subpath); item
+  // links are already base-prefixed via href() and resolve absolutely.
+  const site = new URL(import.meta.env.BASE_URL, context.site).href;
+
   return rss({
     title: SITE.name,
     description: SITE.description,
-    site: context.site,
+    site,
     items,
     customData: `<language>${SITE.locale}</language>`,
   });

@@ -58,9 +58,9 @@ const series = defineCollection({
   }),
   /*
     Photos are referenced by filename; the series page resolves them against
-    src/assets/series/<id>/ via import.meta.glob (which gives both the
-    optimisable ImageMetadata and the on-disk path for LQIP generation).
-    EXIF is data, so it is set in the mono face (brief §6).
+    src/content/series/<id>/ (co-located with index.mdx) via import.meta.glob,
+    which gives both the optimisable ImageMetadata and the on-disk path for LQIP
+    generation. EXIF is data, so it is set in the mono face (brief §6).
   */
   schema: z.object({
     title: z.string(),

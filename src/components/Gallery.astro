@@ -14,42 +14,45 @@ interface Props {
 }
 const { photos } = Astro.props;
 
+// EXIF in the brief's fixed order, not frontmatter key order.
+const EXIF_ORDER = ['camera', 'lens', 'focal', 'shutter', 'aperture', 'iso'] as const;
+
 const items = await Promise.all(
-  photos.map(async (p, i) => {
+  photos.map(async (p) => {
     const large = await getImage({
       src: p.image,
       format: 'webp',
       width: Math.min(1920, p.image.width),
     });
     const exifList = p.exif
-      ? Object.values(p.exif).filter((v): v is string => !!v)
+      ? EXIF_ORDER.map((k) => p.exif![k]).filter((v): v is string => !!v)
       : [];
-    return { i, p, largeSrc: large.src, exifList };
+    return { p, largeSrc: large.src, exifList };
   })
 );
 ---
 
 <ul class="gallery" data-gallery>
   {
-    items.map(({ i, p, largeSrc, exifList }) => (
+    items.map(({ p, largeSrc, exifList }) => (
       <li class="gallery__cell">
+        {/* The button's accessible name comes from the image alt inside it —
+            no redundant aria-label (which would double-announce). Identity in
+            the lightbox is the button's DOM order, so no per-gallery index. */}
         <button
           type="button"
           class="gallery__btn"
-          data-index={i}
           data-full={largeSrc}
-          data-w={p.image.width}
-          data-h={p.image.height}
           data-alt={p.alt}
           data-caption={p.caption ?? ''}
           data-exif={JSON.stringify(exifList)}
-          aria-label={`Open photograph: ${p.alt}`}
         >
           <Figure
             image={p.image}
             alt={p.alt}
             lqip={p.lqip}
             mode="in-column"
+            bare
             sizes="(min-width: 60rem) 30vw, (min-width: 34rem) 45vw, 92vw"
             class="gallery__fig"
           />

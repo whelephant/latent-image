@@ -1,0 +1,53 @@
+---
+import Base from '../layouts/Base.astro';
+import { href } from '../utils/href';
+---
+
+<Base title="Not found" description="That page could not be developed.">
+  <section class="notfound">
+    <p class="notfound__code mono">404</p>
+    <h1 class="notfound__title">Nothing developed here</h1>
+    <p class="notfound__lede">
+      The frame you were looking for came back blank. It may have moved, or never
+      been exposed.
+    </p>
+    <nav class="notfound__links mono" aria-label="Recovery">
+      <a href={href('/')}>Home</a>
+      <a href={href('/writing')}>Writing</a>
+      <a href={href('/photography')}>Photography</a>
+    </nav>
+  </section>
+</Base>
+
+<style>
+  .notfound {
+    max-width: 40rem;
+    margin-inline: auto;
+    padding-block: var(--space-2xl);
+    text-align: center;
+  }
+  .notfound__code {
+    color: var(--safelight);
+    font-size: var(--step-1);
+    letter-spacing: 0.18em;
+  }
+  .notfound__title {
+    font-size: var(--step-4);
+    margin-top: var(--space-s);
+  }
+  .notfound__lede {
+    font-size: var(--step-1);
+    font-style: italic;
+    color: var(--ink-soft);
+    margin-top: var(--space-m);
+    text-wrap: balance;
+  }
+  .notfound__links {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--space-m);
+    margin-top: var(--space-xl);
+    font-size: var(--step--1);
+  }
+</style>

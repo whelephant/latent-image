@@ -24,7 +24,8 @@ const {
 
 const pageTitle = title ? `${title} — ${SITE.name}` : `${SITE.name} — ${SITE.tagline}`;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
-const ogImage = image ? new URL(image, Astro.site).href : undefined;
+// Resolve through href() so a site-relative image (e.g. "/og.png") gets the base.
+const ogImage = image ? new URL(href(image), Astro.site).href : undefined;
 ---
 
 <!doctype html>
@@ -38,8 +39,8 @@ const ogImage = image ? new URL(image, Astro.site).href : undefined;
 
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
-    <meta name="theme-color" content="#fafaf9" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)" />
+    <!-- Single tag; the inline script sets it to the *resolved* theme, not just OS. -->
+    <meta name="theme-color" content="#fafaf9" />
 
     <!-- Open Graph / Twitter -->
     <meta property="og:type" content="website" />
@@ -55,7 +56,8 @@ const ogImage = image ? new URL(image, Astro.site).href : undefined;
     <!--
       No-flash theme resolver. Runs synchronously before first paint and owns
       window.__theme (the toggle island only cycles the stored preference).
-      Sets data-theme (resolved light|dark) + data-theme-pref (raw choice).
+      Sets data-theme (resolved light|dark) + data-theme-pref (raw choice), and
+      re-applies them across <ClientRouter /> swaps (which wipe <html> attrs).
     -->
     <script is:inline>
       (function () {
@@ -67,26 +69,45 @@ const ogImage = image ? new URL(image, Astro.site).href : undefined;
         function resolve(pref) {
           return pref === 'dark' || (pref === 'auto' && systemDark()) ? 'dark' : 'light';
         }
+        function setMeta(doc, theme) {
+          var m = doc.querySelector('meta[name="theme-color"]');
+          if (m) m.setAttribute('content', theme === 'dark' ? '#121212' : '#fafaf9');
+        }
+        function apply(pref) {
+          var theme = resolve(pref);
+          root.dataset.theme = theme;
+          root.dataset.themePref = pref;
+          // Mark JS available before paint so the latent-image treatment engages
+          // without a flash (no-JS shows images normally).
+          root.classList.add('js');
+          setMeta(document, theme);
+        }
         var pref;
         try { pref = localStorage.getItem(KEY) || 'auto'; } catch (e) { pref = 'auto'; }
-        root.dataset.theme = resolve(pref);
-        root.dataset.themePref = pref;
-        // Mark JS available before paint so the latent-image treatment engages
-        // without a flash (no-JS shows images normally).
-        root.classList.add('js');
+        apply(pref);
         window.__theme = {
           get pref() {
             try { return localStorage.getItem(KEY) || 'auto'; } catch (e) { return 'auto'; }
           },
           set: function (p) {
             try { localStorage.setItem(KEY, p); } catch (e) {}
-            root.dataset.themePref = p;
-            root.dataset.theme = resolve(p);
+            apply(p);
           },
           resolve: resolve,
         };
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
-          if ((root.dataset.themePref || 'auto') === 'auto') root.dataset.theme = resolve('auto');
+          if ((root.dataset.themePref || 'auto') === 'auto') apply('auto');
+        });
+        // View transitions replace <html>'s attributes with the (default) static
+        // doc's, dropping the theme. Copy them onto the incoming document so the
+        // theme never flashes across in-site navigations. (Listener on `document`
+        // persists across swaps.)
+        document.addEventListener('astro:before-swap', function (e) {
+          var n = e.newDocument.documentElement;
+          n.dataset.theme = root.dataset.theme;
+          n.dataset.themePref = root.dataset.themePref;
+          n.classList.add('js');
+          setMeta(e.newDocument, root.dataset.theme);
         });
       })();
     </script>

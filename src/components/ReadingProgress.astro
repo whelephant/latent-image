@@ -17,7 +17,7 @@
     left: 0;
     right: 0;
     height: 2px;
-    z-index: 60;
+    z-index: 40; /* under the sticky nav (z-index 50) */
     pointer-events: none;
     background: transparent;
   }
@@ -33,10 +33,17 @@
 </style>
 
 <script>
+  // One controller; aborted + replaced on every (re)wire so view-transition
+  // navigations never accumulate stale scroll/resize listeners on window.
+  let progressAbort: AbortController | null = null;
+
   function wireProgress() {
+    progressAbort?.abort();
     const bar = document.querySelector<HTMLElement>('[data-progress-bar]');
     const article = document.querySelector<HTMLElement>('[data-reading]');
     if (!bar || !article) return;
+    const ac = new AbortController();
+    progressAbort = ac;
     let ticking = false;
     const update = () => {
       ticking = false;
@@ -52,10 +59,9 @@
         requestAnimationFrame(update);
       }
     };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll, { passive: true });
+    window.addEventListener('scroll', onScroll, { passive: true, signal: ac.signal });
+    window.addEventListener('resize', onScroll, { passive: true, signal: ac.signal });
     update();
   }
-  wireProgress();
   document.addEventListener('astro:page-load', wireProgress);
 </script>

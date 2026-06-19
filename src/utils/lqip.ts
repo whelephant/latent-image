@@ -9,7 +9,7 @@ import path from 'node:path';
 
 const cache = new Map<string, Promise<string>>();
 
-/** @param projectRelPath e.g. "/src/assets/series/foo/01.jpg" (glob key) */
+/** @param projectRelPath e.g. "/src/content/series/foo/01.jpg" (glob key) */
 export function lqip(projectRelPath: string): Promise<string> {
   let p = cache.get(projectRelPath);
   if (!p) {
