@@ -22,10 +22,10 @@ html {
   /* Anchor jumps clear the fixed nav. */
   scroll-padding-top: 5rem;
   /* Prevent theme flash: paper is painted before CSS variables resolve. */
-  background-color: #fafaf9;
+  background-color: #f6f5ee;
 }
 html[data-theme='dark'] {
-  background-color: #121212;
+  background-color: #1a1b1c;
 }
 
 body {

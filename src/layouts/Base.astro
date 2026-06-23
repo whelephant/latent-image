@@ -40,7 +40,7 @@ const ogImage = image ? new URL(href(image), Astro.site).href : undefined;
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
     <!-- Single tag; the inline script sets it to the *resolved* theme, not just OS. -->
-    <meta name="theme-color" content="#fafaf9" />
+    <meta name="theme-color" content="#f6f5ee" />
 
     <!-- Open Graph / Twitter -->
     <meta property="og:type" content="website" />
@@ -71,7 +71,7 @@ const ogImage = image ? new URL(href(image), Astro.site).href : undefined;
         }
         function setMeta(doc, theme) {
           var m = doc.querySelector('meta[name="theme-color"]');
-          if (m) m.setAttribute('content', theme === 'dark' ? '#121212' : '#fafaf9');
+          if (m) m.setAttribute('content', theme === 'dark' ? '#1a1b1c' : '#f6f5ee');
         }
         function apply(pref) {
           var theme = resolve(pref);

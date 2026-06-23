@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
   <rect width="32" height="32" rx="6" fill="#0d0d0d"/>
   <!-- a latent point of light resolving: faint halo + safelight glow + bright core -->
-  <circle cx="16" cy="16" r="9" fill="#8e3b2e" opacity="0.18"/>
-  <circle cx="16" cy="16" r="5.2" fill="#8e3b2e" opacity="0.5"/>
+  <circle cx="16" cy="16" r="9" fill="#6d8196" opacity="0.18"/>
+  <circle cx="16" cy="16" r="5.2" fill="#6d8196" opacity="0.5"/>
   <circle cx="16" cy="16" r="2.4" fill="#fafaf9"/>
 </svg>
