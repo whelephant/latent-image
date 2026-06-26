@@ -1,117 +1,88 @@
 ---
 import { getCollection } from 'astro:content';
+import { getImage } from 'astro:assets';
 import Base from '../../layouts/Base.astro';
-import Figure from '../../components/Figure.astro';
 import { resolveCover } from '../../utils/series';
-import { formatDate, isoDate } from '../../utils/date';
 import { href } from '../../utils/href';
 
 const all = (await getCollection('series', ({ data }) => !data.draft)).sort(
   (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
 );
-
 const series = await Promise.all(
-  all.map(async (entry) => ({
-    id: entry.id,
-    data: entry.data,
-    cover: await resolveCover(entry.id, entry.data.cover, entry.data.coverAlt),
-  }))
+  all.map(async (s) => {
+    const cover = resolveCover(s.id, s.data.cover, s.data.coverAlt);
+    const thumb = await getImage({
+      src: cover.image,
+      width: 900,
+      height: 600,
+      fit: 'cover',
+      position: 'attention',
+      format: 'webp',
+    });
+    return { id: s.id, data: s.data, thumb, alt: cover.alt };
+  })
 );
 ---
 
-<Base title="Photography" description="Photographic series, presented as small monographs.">
-  <div class="page">
-    <header class="page-head">
-      <h1>Photography</h1>
-      <p class="page-dek">Series, each made and sequenced as a small monograph.</p>
-    </header>
-
-    <ul class="series-list">
-      {
-        series.map(({ id, data, cover }) => (
-          <li class="series-card">
-            <a href={href(`/photography/${id}`)} class="series-card__link">
-              <Figure
-                image={cover.image}
-                alt={cover.alt}
-                lqip={cover.lqip}
-                mode="in-column"
-                sizes="(min-width: 50rem) 48rem, 92vw"
-                class="series-card__cover"
-              />
-              <div class="series-card__body">
-                <h2 class="series-card__title">{data.title}</h2>
-                <p class="series-card__dek">{data.description}</p>
-                <p class="series-card__meta mono">
-                  <time datetime={isoDate(data.date)}>{formatDate(data.date)}</time>
-                  {data.place && <><span aria-hidden="true">·</span><span>{data.place}</span></>}
-                </p>
-              </div>
-            </a>
-          </li>
-        ))
-      }
-      {series.length === 0 && <li class="series-empty">No series yet.</li>}
-    </ul>
-  </div>
+<Base wide title="Photography">
+  <h1 class="visually-hidden">Photography</h1>
+  <ul class="projects">
+    {
+      series.map(({ id, data, thumb, alt }) => (
+        <li>
+          <a class="project" href={href(`/photography/${id}`)}>
+            <img
+              src={thumb.src}
+              width={thumb.attributes.width}
+              height={thumb.attributes.height}
+              alt={alt}
+              loading="lazy"
+            />
+            <span class="project__title">{data.title}</span>
+            <span class="project__meta">
+              {data.date.getFullYear()}
+              {data.place ? ` · ${data.place}` : ''}
+            </span>
+          </a>
+        </li>
+      ))
+    }
+    {series.length === 0 && <li>No series yet.</li>}
+  </ul>
 </Base>
 
 <style>
-  .page {
-    max-width: 52rem;
-    margin-inline: auto;
-  }
-  .page-head {
-    margin-bottom: var(--space-xl);
-  }
-  .page-dek {
-    font-size: var(--step-1);
-    font-style: italic;
-    color: var(--ink-soft);
-    margin-top: var(--space-s);
-  }
-  .series-list {
+  .projects {
     list-style: none;
     padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2xl);
-  }
-  .series-card__link {
-    display: block;
-    color: inherit;
-  }
-  .series-card__link:hover {
-    text-decoration: none;
-  }
-  .series-card__link :global(.series-card__cover) {
     margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+    gap: var(--space-l) var(--space-m);
   }
-  .series-card__body {
-    margin-top: var(--space-m);
+  .project {
+    display: block;
   }
-  .series-card__title {
-    font-size: var(--step-3);
-    transition: color var(--dur-fast) var(--ease-out);
+  .project img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+    background: var(--mat);
   }
-  .series-card__link:hover .series-card__title {
-    color: var(--safelight);
+  .project__title {
+    display: block;
+    margin-top: 0.6rem;
+    font-weight: 600;
   }
-  .series-card__dek {
-    color: var(--ink-soft);
-    font-style: italic;
-    margin-top: 0.4rem;
-    max-width: 50ch;
-  }
-  .series-card__meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6ch;
-    color: var(--ink-soft);
+  .project__meta {
+    display: block;
     font-size: var(--step--1);
-    margin-top: var(--space-s);
-  }
-  .series-empty {
     color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .project:hover .project__title {
+    color: var(--accent);
   }
 </style>

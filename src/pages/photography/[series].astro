@@ -1,10 +1,9 @@
 ---
-import { getCollection, render } from 'astro:content';
+import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import Gallery from '../../components/Gallery.astro';
 import Lightbox from '../../components/Lightbox.astro';
 import { resolvePhotos } from '../../utils/series';
-import { formatDate, isoDate } from '../../utils/date';
 
 export async function getStaticPaths() {
   const all = await getCollection('series', ({ data }) => !data.draft);
@@ -12,80 +11,40 @@ export async function getStaticPaths() {
 }
 
 const { entry } = Astro.props;
-const { Content } = await render(entry);
-const { title, description, date, place, placeholderNote } = entry.data;
-const photos = await resolvePhotos(entry.id, entry.data.photos);
+const { title, description, date, place } = entry.data;
+const photos = resolvePhotos(entry.id, entry.data.photos);
 ---
 
-<Base title={title} description={description}>
-  <article class="series">
-    <header class="series__intro">
-      <h1 class="series__title">{title}</h1>
-      <p class="series__dek">{description}</p>
-      <p class="series__meta mono">
-        <time datetime={isoDate(date)}>{formatDate(date)}</time>
-        {place && <><span aria-hidden="true">·</span><span>{place}</span></>}
-        <span aria-hidden="true">·</span>
-        <span>{photos.length} photographs</span>
-      </p>
-      <div class="series__note">
-        <Content />
-      </div>
-      {
-        placeholderNote && (
-          <p class="series__placeholder mono">
-            Note — these are generated tonal placeholders demonstrating the image
-            pipeline. Replace the images in src/content/series/ with real
-            photographs.
-          </p>
-        )
-      }
-    </header>
+<Base wide title={title} description={description}>
+  <header class="intro">
+    <h1>{title}</h1>
+    <p class="intro__meta">
+      {date.getFullYear()}{place ? ` · ${place}` : ''} · {photos.length} photographs
+    </p>
+    {description && <p class="intro__desc">{description}</p>}
+  </header>
 
-    <Gallery photos={photos} />
-  </article>
-
+  <Gallery photos={photos} />
   <Lightbox />
 </Base>
 
 <style>
-  .series__intro {
-    max-width: 46rem;
-    margin: 0 auto var(--space-2xl);
+  .intro {
+    max-width: var(--measure);
+    margin: 0 auto var(--space-l);
   }
-  .series__title {
-    font-size: var(--step-4);
+  .intro h1 {
+    font-size: var(--step-3);
   }
-  .series__dek {
-    font-size: var(--step-1);
-    font-style: italic;
+  .intro__meta {
+    margin-top: 0.4rem;
+    font-size: var(--step--1);
     color: var(--ink-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .intro__desc {
     margin-top: var(--space-s);
-    max-width: 44ch;
-  }
-  .series__meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6ch;
-    color: var(--ink-soft);
-    font-size: var(--step--1);
-    margin-top: var(--space-m);
-  }
-  .series__note {
-    margin-top: var(--space-l);
-    color: var(--ink);
-    max-width: 60ch;
-  }
-  .series__note :global(p) {
-    margin-block: var(--space-s);
-  }
-  .series__placeholder {
-    margin-top: var(--space-l);
-    padding: var(--space-s) var(--space-m);
-    border: var(--rule);
-    border-left: 2px solid var(--safelight);
-    border-radius: var(--radius);
-    font-size: var(--step--1);
     color: var(--ink-soft);
   }
 </style>

@@ -1,64 +1,42 @@
 /*
-  tokens.css — the single source of truth for the visual language.
-  Palette: a cool slate-and-stone scheme (greys + a slate-blue accent). The
-  interface stays near-monochrome on purpose — photographs supply the colour, so
-  the chrome must never compete with them. Surfaces are kept a barely-warm
-  near-white (not full cream) so prints read true.
-
-  Theme model: light is the default (:root). The inline no-flash script in the
-  <head> resolves auto -> light|dark and sets data-theme on <html>, so dark
-  styles key off [data-theme='dark']. Never rely on a media query alone for
-  colour, or the toggle can't override it.
-
-  Source swatches: #4A4A4A #CBCBCB #FFFFE3 #6D8196 — tuned for legibility
-  (AA contrast) and to keep surfaces cool for the photography.
+  tokens.css — single source of truth. Deliberately minimal: one light theme,
+  system sans-serif, a near-monochrome palette so the photographs carry the page.
+  Source swatches: #4A4A4A #CBCBCB #FFFFE3 #6D8196 (slate-and-stone).
 */
 
 :root {
-  /* ---- Palette: light mode ---- */
-  --paper: #f6f5ee;       /* page surface — a whisper of warmth, not full cream */
-  --ink: #2c2c2c;         /* primary text (crisp, from #4A4A4A family) */
-  --ink-soft: #6e6e66;    /* secondary text, captions — neutral grey, AA */
-  --hairline: #cbcbcb;    /* rules, borders, dividers (#CBCBCB) */
-  --mat: #0d0d0d;         /* gallery/photo "mat" — dark in BOTH modes */
+  /* ---- Palette (single light theme) ---- */
+  --paper: #f6f5ee; /* barely-warm near-white surface */
+  --ink: #2c2c2c; /* primary text */
+  --ink-soft: #6e6e66; /* secondary text, meta */
+  --hairline: #d7d6cf; /* rules, borders */
+  --mat: #111110; /* gallery/lightbox backdrop */
+  --accent: #54677a; /* slate — links/focus only */
 
-  /* Accent — slate blue (#6D8196), darkened to #54677A so body-size links pass
-     AA on the surface. Links/active/focus only; leave colour to the photos. */
-  --safelight: #54677a;
-  --safelight-ink: #f6f5ee; /* text that sits on a slate fill */
+  /* ---- Type: system sans, no web fonts ---- */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
+    'Apple Color Emoji', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 
-  /* Translucent ink/paper for hairlines-on-images, scrims, hover wash. */
-  --ink-wash: rgba(44, 44, 44, 0.05);
-  --scrim: rgba(13, 13, 13, 0.55);
+  /* ---- Type scale (modest) ---- */
+  --step--1: 0.8rem;
+  --step-0: 1rem;
+  --step-1: 1.15rem;
+  --step-2: 1.4rem;
+  --step-3: 1.85rem;
+  --step-4: clamp(2rem, 1.4rem + 2.4vw, 2.8rem);
 
-  /* ---- Type families (self-hosted; see fonts.css) ---- */
-  --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --lh-body: 1.65;
+  --lh-tight: 1.15;
 
-  /* ---- Type scale: ~1.22 (major-second-ish) ratio (brief §3b) ----
-     Fluid where it helps display sizes; fixed for body to protect measure. */
-  --step--1: 0.833rem;   /* fine print, EXIF, sidenote labels */
-  --step-0: 1.0625rem;   /* body — ~17px base for comfortable prose */
-  --step-1: 1.296rem;
-  --step-2: clamp(1.5rem, 1.3rem + 1vw, 1.802rem);
-  --step-3: clamp(1.9rem, 1.5rem + 2vw, 2.566rem);
-  --step-4: clamp(2.4rem, 1.7rem + 3.5vw, 3.653rem);
-  --step-5: clamp(3rem, 2rem + 5vw, 5.2rem);   /* hero / wordmark display */
+  /* ---- Layout ---- */
+  --measure: 66ch; /* prose width */
+  --maxw: 84rem; /* site max width */
+  --pad: clamp(1rem, 4vw, 2.5rem); /* page edge padding */
+  --gap: 0.5rem; /* grid gutter — tight, gallery-wall */
 
-  /* ---- Rhythm & line-height ---- */
-  --lh-body: 1.6;        /* generous for sustained reading (brief §3b) */
-  --lh-tight: 1.12;      /* display headings */
-  --lh-snug: 1.3;
-
-  /* ---- Measure & layout tracks (brief §3c: column + margin) ---- */
-  --measure: 65ch;            /* prose column, within 62–72ch */
-  --measure-px: 42rem;        /* fallback fixed width for non-prose blocks */
-  --margin-track: 16rem;      /* the true margin track for sidenotes/figures */
-  --gutter: 2.5rem;           /* gap between reading column and margin track */
-  --pad-inline: clamp(1.25rem, 5vw, 3rem); /* page edge padding */
-
-  /* ---- Spacing scale ---- */
-  --space-3xs: 0.25rem;
+  /* ---- Spacing ---- */
   --space-2xs: 0.5rem;
   --space-xs: 0.75rem;
   --space-s: 1rem;
@@ -67,29 +45,6 @@
   --space-xl: 4rem;
   --space-2xl: 6rem;
 
-  /* ---- Misc ---- */
-  --radius: 2px;          /* prints/cards stay crisp, not bubbly */
   --rule: 1px solid var(--hairline);
-  --focus-ring: 2px solid var(--safelight);
-  --shadow-lift: 0 1px 2px rgba(13, 13, 13, 0.08), 0 8px 24px rgba(13, 13, 13, 0.08);
-
-  /* ---- Motion (seasoning, not the meal — brief §2) ---- */
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --dur-fast: 180ms;
-  --dur: 320ms;
-  --dur-slow: 640ms;   /* the latent-image develop */
-}
-
-/* ---- Palette: dark mode (derived to match the slate-and-stone family) ---- */
-:root[data-theme='dark'] {
-  --paper: #1a1b1c;           /* deep cool charcoal */
-  --ink: #ecebe0;             /* warm off-white (echoes the cream note) */
-  --ink-soft: #9a9a90;
-  --hairline: #33332f;
-  --mat: #0a0a0a;
-  --safelight: #8fa3b6;       /* slate lifted for AA contrast on dark paper */
-  --safelight-ink: #10161b;
-  --ink-wash: rgba(236, 235, 224, 0.06);
-  --scrim: rgba(8, 8, 8, 0.6);
-  --shadow-lift: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.5);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }

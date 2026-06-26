@@ -3,51 +3,27 @@ import Base from '../layouts/Base.astro';
 import { href } from '../utils/href';
 ---
 
-<Base title="Not found" description="That page could not be developed.">
-  <section class="notfound">
-    <p class="notfound__code mono">404</p>
-    <h1 class="notfound__title">Nothing developed here</h1>
-    <p class="notfound__lede">
-      The frame you were looking for came back blank. It may have moved, or never
-      been exposed.
-    </p>
-    <nav class="notfound__links mono" aria-label="Recovery">
-      <a href={href('/')}>Home</a>
-      <a href={href('/writing')}>Writing</a>
-      <a href={href('/photography')}>Photography</a>
-    </nav>
-  </section>
+<Base title="Not found">
+  <div class="nf">
+    <h1>Not found</h1>
+    <p><a href={href('/')}>Back to the photographs</a></p>
+  </div>
 </Base>
 
 <style>
-  .notfound {
-    max-width: 40rem;
-    margin-inline: auto;
-    padding-block: var(--space-2xl);
+  .nf {
     text-align: center;
+    padding-block: var(--space-2xl);
   }
-  .notfound__code {
-    color: var(--safelight);
-    font-size: var(--step-1);
-    letter-spacing: 0.18em;
+  .nf h1 {
+    font-size: var(--step-3);
   }
-  .notfound__title {
-    font-size: var(--step-4);
-    margin-top: var(--space-s);
+  .nf a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
   }
-  .notfound__lede {
-    font-size: var(--step-1);
-    font-style: italic;
-    color: var(--ink-soft);
+  .nf p {
     margin-top: var(--space-m);
-    text-wrap: balance;
-  }
-  .notfound__links {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: var(--space-m);
-    margin-top: var(--space-xl);
-    font-size: var(--step--1);
   }
 </style>

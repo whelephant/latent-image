@@ -1,11 +1,9 @@
 /*
   series.ts — resolves photo filenames (from series frontmatter) to optimisable
-  ImageMetadata + an LQIP, using a single eager glob over the assets dir. Keeping
-  this in one place means the series page, photography index, and home all share
-  the same resolution and the CDN swap (brief §6) is a one-file change later.
+  ImageMetadata via one eager glob over the co-located images.
 */
 import type { ImageMetadata } from 'astro';
-import { lqip } from './lqip';
+import { getCollection } from 'astro:content';
 
 const metas = import.meta.glob<ImageMetadata>(
   '/src/content/series/**/*.{jpg,jpeg,png,JPG,JPEG,PNG}',
@@ -17,11 +15,10 @@ function keyFor(seriesId: string, file: string): string {
 }
 
 export function getImageMeta(seriesId: string, file: string): ImageMetadata {
-  const key = keyFor(seriesId, file);
-  const meta = metas[key];
+  const meta = metas[keyFor(seriesId, file)];
   if (!meta) {
     throw new Error(
-      `Photo not found: ${key}. Available: ${Object.keys(metas).join(', ')}`
+      `Photo not found: ${keyFor(seriesId, file)}. Available: ${Object.keys(metas).join(', ')}`
     );
   }
   return meta;
@@ -31,44 +28,34 @@ export interface ResolvedPhoto {
   image: ImageMetadata;
   alt: string;
   caption?: string;
-  exif?: Record<string, string | undefined>;
-  lqip: string;
+  /** link target (series page) — used by the overview grid */
+  series?: string;
 }
 
 interface PhotoInput {
   file: string;
   alt: string;
   caption?: string;
-  exif?: Record<string, string | undefined>;
 }
 
-export async function resolvePhotos(
-  seriesId: string,
-  photos: PhotoInput[]
-): Promise<ResolvedPhoto[]> {
-  return Promise.all(
-    photos.map(async (p) => {
-      const key = keyFor(seriesId, p.file);
-      return {
-        image: getImageMeta(seriesId, p.file),
-        alt: p.alt,
-        caption: p.caption,
-        exif: p.exif,
-        lqip: await lqip(key),
-      };
-    })
+export function resolvePhotos(seriesId: string, photos: PhotoInput[]): ResolvedPhoto[] {
+  return photos.map((p) => ({
+    image: getImageMeta(seriesId, p.file),
+    alt: p.alt,
+    caption: p.caption,
+  }));
+}
+
+export function resolveCover(seriesId: string, file: string, alt: string): ResolvedPhoto {
+  return { image: getImageMeta(seriesId, file), alt };
+}
+
+/** Every photograph across all non-draft series, newest series first. */
+export async function getAllPhotos(): Promise<ResolvedPhoto[]> {
+  const all = (await getCollection('series', ({ data }) => !data.draft)).sort(
+    (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
   );
-}
-
-export async function resolveCover(
-  seriesId: string,
-  file: string,
-  alt: string
-): Promise<ResolvedPhoto> {
-  const key = keyFor(seriesId, file);
-  return {
-    image: getImageMeta(seriesId, file),
-    alt,
-    lqip: await lqip(key),
-  };
+  return all.flatMap((s) =>
+    resolvePhotos(s.id, s.data.photos).map((p) => ({ ...p, series: s.id }))
+  );
 }

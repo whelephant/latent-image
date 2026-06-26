@@ -1,5 +1,4 @@
 ---
-import { ClientRouter } from 'astro:transitions';
 import { SITE } from '../consts';
 import { href } from '../utils/href';
 import Nav from '../components/Nav.astro';
@@ -9,22 +8,13 @@ import '../styles/global.css';
 interface Props {
   title?: string;
   description?: string;
-  /* og/twitter image — absolute or site-relative URL */
-  image?: string;
-  /* drop the centered content frame for full-bleed pages (home, galleries) */
-  bleed?: boolean;
+  image?: string; // og image (site-relative or absolute)
+  wide?: boolean; // full-width pages (grids); default is a centered column
 }
+const { title, description = SITE.description, image, wide = false } = Astro.props;
 
-const {
-  title,
-  description = SITE.description,
-  image,
-  bleed = false,
-} = Astro.props;
-
-const pageTitle = title ? `${title} — ${SITE.name}` : `${SITE.name} — ${SITE.tagline}`;
+const pageTitle = title ? `${title} — ${SITE.name}` : `${SITE.name}`;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
-// Resolve through href() so a site-relative image (e.g. "/og.png") gets the base.
 const ogImage = image ? new URL(href(image), Astro.site).href : undefined;
 ---
 
@@ -36,13 +26,11 @@ const ogImage = image ? new URL(href(image), Astro.site).href : undefined;
     <link rel="icon" href={href('/favicon.svg')} type="image/svg+xml" />
     <link rel="canonical" href={canonical} />
     <meta name="generator" content={Astro.generator} />
+    <meta name="theme-color" content="#f6f5ee" />
 
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
-    <!-- Single tag; the inline script sets it to the *resolved* theme, not just OS. -->
-    <meta name="theme-color" content="#f6f5ee" />
 
-    <!-- Open Graph / Twitter -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={SITE.name} />
     <meta property="og:title" content={pageTitle} />
@@ -52,88 +40,24 @@ const ogImage = image ? new URL(href(image), Astro.site).href : undefined;
     <meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'} />
 
     <link rel="alternate" type="application/rss+xml" title={SITE.name} href={href('/rss.xml')} />
-
-    <!--
-      No-flash theme resolver. Runs synchronously before first paint and owns
-      window.__theme (the toggle island only cycles the stored preference).
-      Sets data-theme (resolved light|dark) + data-theme-pref (raw choice), and
-      re-applies them across <ClientRouter /> swaps (which wipe <html> attrs).
-    -->
-    <script is:inline>
-      (function () {
-        var KEY = 'theme';
-        var root = document.documentElement;
-        function systemDark() {
-          return window.matchMedia('(prefers-color-scheme: dark)').matches;
-        }
-        function resolve(pref) {
-          return pref === 'dark' || (pref === 'auto' && systemDark()) ? 'dark' : 'light';
-        }
-        function setMeta(doc, theme) {
-          var m = doc.querySelector('meta[name="theme-color"]');
-          if (m) m.setAttribute('content', theme === 'dark' ? '#1a1b1c' : '#f6f5ee');
-        }
-        function apply(pref) {
-          var theme = resolve(pref);
-          root.dataset.theme = theme;
-          root.dataset.themePref = pref;
-          // Mark JS available before paint so the latent-image treatment engages
-          // without a flash (no-JS shows images normally).
-          root.classList.add('js');
-          setMeta(document, theme);
-        }
-        var pref;
-        try { pref = localStorage.getItem(KEY) || 'auto'; } catch (e) { pref = 'auto'; }
-        apply(pref);
-        window.__theme = {
-          get pref() {
-            try { return localStorage.getItem(KEY) || 'auto'; } catch (e) { return 'auto'; }
-          },
-          set: function (p) {
-            try { localStorage.setItem(KEY, p); } catch (e) {}
-            apply(p);
-          },
-          resolve: resolve,
-        };
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
-          if ((root.dataset.themePref || 'auto') === 'auto') apply('auto');
-        });
-        // View transitions replace <html>'s attributes with the (default) static
-        // doc's, dropping the theme. Copy them onto the incoming document so the
-        // theme never flashes across in-site navigations. (Listener on `document`
-        // persists across swaps.)
-        document.addEventListener('astro:before-swap', function (e) {
-          var n = e.newDocument.documentElement;
-          n.dataset.theme = root.dataset.theme;
-          n.dataset.themePref = root.dataset.themePref;
-          n.classList.add('js');
-          setMeta(e.newDocument, root.dataset.theme);
-        });
-      })();
-    </script>
-
-    <ClientRouter />
   </head>
 
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
     <Nav />
-    <main id="main" class:list={['site-main', { 'site-main--bleed': bleed }]}>
+    <main id="main" class:list={['main', { 'main--wide': wide }]}>
       <slot />
     </main>
     <Footer />
 
     <style>
-      .site-main {
-        max-width: 78rem;
+      .main {
+        max-width: var(--measure);
         margin-inline: auto;
-        padding-inline: var(--pad-inline);
-        padding-block: var(--space-xl);
+        padding: var(--space-xl) var(--pad) var(--space-2xl);
       }
-      /* Full-bleed pages manage their own width; keep only top breathing room. */
-      .site-main--bleed {
-        max-width: none;
-        padding: 0;
+      .main--wide {
+        max-width: var(--maxw);
       }
     </style>
   </body>
